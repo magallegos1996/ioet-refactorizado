@@ -1,21 +1,19 @@
-const weekDaysPattern = /^MO|^TU|^WE|^TH|^FR/;
-const weekEndPattern = /^SA|^SU/;
-const pattern = /^MO|^TU|^WE|^TH|^FR|^SA|^SU/;
+const constants = require('../constants/Contants')
+const WEEK_DAY_PATTERN = /^MO|^TU|^WE|^TH|^FR/;
+const WEEK_END_PATTERN = /^SA|^SU/;
 
 const salaryHelper = {}
 
-let salaryWeekDays;
 let moneyPerDayEarned = 0;
-let totalSalaryToPay = 0;
+let totalSalaryToPay;
 
 salaryHelper.calculateSalary = (employees) => {
     employees.forEach(employee => {
-        salaryWeekDays = 0;
-        const weekDays = employee.daysWorked.filter(day => new RegExp(weekDaysPattern, 'i').test(day));
-        const weekEnd = employee.daysWorked.filter(day => new RegExp(weekEndPattern, 'i').test(day));
+        totalSalaryToPay = 0;
+        const weekDays = employee.daysWorked.filter(day => new RegExp(WEEK_DAY_PATTERN, 'i').test(day));
+        const weekEnd = employee.daysWorked.filter(day => new RegExp(WEEK_END_PATTERN, 'i').test(day));
         processEmployeeWork(weekDays, 'WEEKDAYS');
         processEmployeeWork(weekEnd, 'WEEKEND');
-        totalSalaryToPay = salaryWeekDays
         console.log(`The amount to pay ${employee.name} is: ${totalSalaryToPay} USD`);
     });
 }
@@ -23,32 +21,43 @@ function processEmployeeWork (days, weekTime) {
     let rangeOfTimeWorkedInSeconds;
     days.forEach(day => {
         rangeOfTimeWorkedInSeconds = []
-        const rangeOfTimeWorkedInHours = day.replace(pattern, '').split('-');
-        rangeOfTimeWorkedInHours.forEach(value => {
-            const seconds = convertHoursToSeconds(value);
+        const rangeOfTimeWorkedInHours = day.replace(WEEK_DAY_PATTERN, '').replace(WEEK_END_PATTERN, '').split('-');
+        rangeOfTimeWorkedInHours.forEach(hours => {
+            const seconds = convertHoursToSeconds(hours);
             rangeOfTimeWorkedInSeconds.push(parseInt(seconds));
         });
-        salaryWeekDays = salaryWeekDays + calculateMoneyPerDay(rangeOfTimeWorkedInSeconds, weekTime);
+        totalSalaryToPay = totalSalaryToPay + calculateMoneyPerDay(rangeOfTimeWorkedInSeconds, weekTime);
     });
 }
-function convertHoursToSeconds(hour) {
-    const arr = hour.split(':');
-    return (+arr[0]) * 60 * 60 + (+arr[1]) * 60;
+function convertHoursToSeconds(hours) {
+    const hoursSplitted = hours.split(':');
+    const hour = hoursSplitted[0]
+    const minutes = hoursSplitted[1]
+    return (hour * 3600) + (minutes * 60);
 }
 function calculateMoneyPerDay (rangeOfTimeWorkedInSeconds, weekTime){
-    const numberOfHoursWorked = calculateNumberOfHoursWorked(rangeOfTimeWorkedInSeconds);
+    const startTime =  rangeOfTimeWorkedInSeconds[0];
+    const endTime = rangeOfTimeWorkedInSeconds[1];
+    const numberOfHoursWorked = calculateNumberOfHoursWorked(startTime, endTime);
 
-    if(rangeOfTimeWorkedInSeconds[0] >= 60 && rangeOfTimeWorkedInSeconds[1] <= 32400) {
-        weekTime === 'WEEKDAYS' ? moneyPerDayEarned = 25*numberOfHoursWorked : moneyPerDayEarned = 30*numberOfHoursWorked
-    } else if (rangeOfTimeWorkedInSeconds[0] > 32400 && rangeOfTimeWorkedInSeconds[1] <= 64800) {
-        weekTime === 'WEEKDAYS' ? moneyPerDayEarned = 15*numberOfHoursWorked : moneyPerDayEarned = 20*numberOfHoursWorked
-    } else if((rangeOfTimeWorkedInSeconds[0] > 64800 && rangeOfTimeWorkedInSeconds[1] <= 86400) ||
-               (rangeOfTimeWorkedInSeconds[0] > 64800 && rangeOfTimeWorkedInSeconds[1] < 60)) {
-        weekTime === 'WEEKDAYS' ? moneyPerDayEarned = 20*numberOfHoursWorked : moneyPerDayEarned = 25*numberOfHoursWorked;
+    const employeeWorkedInMorning = startTime >= constants.time.HOUR_ZERO_IN_SECONDS && endTime <= constants.time.HOUR_NINE_IN_SECONDS
+    const employeeWorkedInAfternoon = startTime > constants.time.HOUR_NINE_IN_SECONDS && endTime <= constants.time.HOUR_EIGHTEEN_IN_SECONDS
+    const employeeWorkedInNight = (startTime > constants.time.HOUR_EIGHTEEN_IN_SECONDS && endTime <= constants.time.HOUR_TWENTY_FOUR_IN_SECONDS) ||
+                                  (startTime > constants.time.HOUR_EIGHTEEN_IN_SECONDS && endTime < constants.time.HOUR_ZERO_IN_SECONDS)
+
+    if(employeeWorkedInMorning) {
+        weekTime === 'WEEKDAYS' ? moneyPerDayEarned = constants.weekdaySalary.MORNING*numberOfHoursWorked :
+                                  moneyPerDayEarned = constants.weekendSalary.MORNING*numberOfHoursWorked
+    } else if (employeeWorkedInAfternoon) {
+        weekTime === 'WEEKDAYS' ? moneyPerDayEarned = constants.weekdaySalary.AFTERNOON*numberOfHoursWorked :
+                                  moneyPerDayEarned = constants.weekendSalary.AFTERNOON*numberOfHoursWorked
+    } else if(employeeWorkedInNight) {
+        weekTime === 'WEEKDAYS' ? moneyPerDayEarned = constants.weekdaySalary.NIGHT*numberOfHoursWorked :
+                                  moneyPerDayEarned = constants.weekendSalary.NIGHT*numberOfHoursWorked;
     }
     return moneyPerDayEarned;
 }
-function calculateNumberOfHoursWorked (rangeOfTimeWorkedInSeconds) {
-    return (rangeOfTimeWorkedInSeconds[1] - rangeOfTimeWorkedInSeconds[0])/3600;
+function calculateNumberOfHoursWorked (startTime, endTime) {
+    return (endTime - startTime)/3600;
 }
 module.exports = salaryHelper
