@@ -1,0 +1,26 @@
+{
+  "name": "ioet-exercise",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/magallegos1996/ioet-exercise.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/magallegos1996/ioet-exercise/issues"
+  },
+  "homepage": "https://github.com/magallegos1996/ioet-exercise#readme",
+  "dependencies": {},
+  "devDependencies": {
+    "jest": "^26.4.2",
+    "rewire": "^5.0.0"
+  }
+}
